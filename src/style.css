@@ -1,0 +1,321 @@
+:root {
+  --primary: #1552A0;
+  --primary-light: #EAF2FB;
+  --primary-deep: #0E3D7C;
+  --red: #D93636;
+  --red-bg: #FDEEED;
+  --yellow: #E8A33D;
+  --yellow-bg: #FCF5E8;
+  --green: #2E9E6B;
+  --green-bg: #ECF7F1;
+  --orange: #E8763D;
+  --text: #1F2329;
+  --text2: #5A6472;
+  --text3: #8A93A1;
+  --bg: #F5F7FA;
+  --card: #fff;
+  --line: #E7EBF0;
+  --radius: 14px;
+  --shadow: 0 2px 10px rgba(21, 82, 160, .06);
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: linear-gradient(135deg, #EDF2F8 0%, #E3EAF3 100%);
+  color: var(--text)
+}
+
+/* 针对 Chrome, Edge, Safari 等 Webkit 内核浏览器 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  /* 这里的颜色改成你想要的颜色，比如透明或者深色背景色 */
+  -webkit-box-shadow: transparent 0 0 0px 1000px #1552A0 inset !important;
+  /* 同时修改文字颜色，保证对比度 */
+  -webkit-text-fill-color: #ffffff !important;
+  /* 过渡动画延迟，防止背景闪烁 */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.el-tabs__header {
+  display: none
+}
+
+.el-table {
+  --el-table-header-bg-color: #F4F7FB;
+  --el-table-border-color: var(--line);
+  --el-table-text-color: var(--text);
+  --el-table-header-text-color: var(--text2);
+  font-size: 11px
+}
+
+.el-table .cell {
+  padding: 0 5px;
+  white-space: nowrap
+}
+
+.el-table th.el-table__cell {
+  padding: 6px 0
+}
+
+.el-table td.el-table__cell {
+  padding: 6px 0
+}
+
+.el-card {
+  border: none !important;
+  box-shadow: none !important
+}
+
+.el-input__wrapper {
+  box-shadow: none !important
+}
+
+.page-scroll-area {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden
+}
+
+.page-scroll-area::-webkit-scrollbar {
+  width: 0
+}
+
+/* ==========================================
+   全局自定义 Element Plus Dropdown 触发器样式
+   ========================================== */
+
+/* 1. 针对鼠标悬停（Hover）和聚焦（Focus）状态 */
+/* 使用 el-dropdown 父级限制，防止影响页面上其他普通的 div */
+.el-dropdown .header__user:hover,
+.el-dropdown .header__user:focus,
+.el-dropdown .header__user:focus-visible {
+  /* 截图中的边框颜色 */
+  border: 1px solid rgba(80, 149, 255, 0.4) !important;
+  /* 截图中的文字颜色（悬停时稍亮一点） */
+  color: #a0cdff !important;
+  /* 截图中的背景渐变（悬停时透明度加深，避免变白） */
+  background: linear-gradient(100deg, rgba(41, 110, 218, 0.35), rgba(29, 69, 135, 0.2)) !important;
+  /* 移除 Element Plus 默认可能带来的背景色 */
+  background-color: transparent !important;
+}
+
+/* 2. 针对默认（未悬停）状态 */
+.el-dropdown .header__user {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0 12px;
+  /* 根据需要调整内边距 */
+  height: 100%;
+  /* 继承父级高度 */
+
+  /* 截图中的核心样式 */
+  border: 1px solid rgba(80, 149, 255, 0.19) !important;
+  color: #8bc0ff !important;
+  background: linear-gradient(100deg, rgba(41, 110, 218, 0.23), rgba(29, 69, 135, 0.1)) !important;
+  background-color: transparent !important;
+  /* 防止默认白色背景 */
+
+  border-radius: 6px;
+  /* 增加圆角更美观，不需要可删除 */
+  transition: all 0.3s ease;
+
+  /* 清除默认的外边框和轮廓线 */
+  outline: none;
+}
+
+/* 3. 确保内部的图标和文字继承颜色，不变成黑色或白色 */
+.el-dropdown .header__user .header__username,
+.el-dropdown .header__user .el-icon {
+  color: inherit !important;
+  background: transparent !important;
+}
+
+/* 4. 针对 el-dropdown 本身的全局重置，防止它自带的背景干扰 */
+.el-dropdown {
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  vertical-align: middle;
+}
+
+.el-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: auto;
+  padding: 4px 5px;
+  color: #49dcf5;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  transition: color 0.25s, text-shadow 0.25s;
+}
+
+/* 下拉菜单容器 */
+.el-select__popper.el-popper,
+.el-select-dropdown.el-popper {
+  --el-bg-color-overlay: #0c1b2b;
+  --el-border-color-light: rgba(57, 190, 255, 0.3);
+  --el-fill-color-light: rgba(44, 163, 255, 0.12);
+  --el-text-color-regular: #b8d5e8;
+  --el-text-color-primary: #e1f5ff;
+
+  padding: 6px !important;
+  background: linear-gradient(145deg,
+      rgba(13, 31, 49, 0.98),
+      rgba(7, 20, 35, 0.99)) !important;
+
+  border: 1px solid rgba(48, 184, 255, 0.38) !important;
+  border-radius: 10px !important;
+
+  box-shadow:
+    0 0 12px rgba(0, 174, 255, 0.12),
+    0 0 30px rgba(0, 132, 255, 0.08),
+    inset 0 0 15px rgba(37, 153, 255, 0.04) !important;
+
+  backdrop-filter: blur(16px);
+  overflow: visible;
+}
+
+/* 下拉选项列表 */
+.el-select-dropdown__list {
+  padding: 4px !important;
+}
+
+/* 单个选项 */
+.el-select-dropdown__item {
+  position: relative;
+  height: 42px !important;
+  line-height: 42px !important;
+  padding: 0 16px !important;
+  margin: 2px 0;
+
+  color: #a8c5d9 !important;
+  font-size: 15px;
+  font-weight: 400;
+
+  border-radius: 6px;
+  background: transparent !important;
+
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* 鼠标悬停 */
+.el-select-dropdown__item:hover,
+.el-select-dropdown__item.hover {
+  color: #65d5ff !important;
+
+  background: linear-gradient(90deg,
+      rgba(0, 170, 255, 0.18),
+      rgba(0, 115, 255, 0.06)) !important;
+
+  box-shadow:
+    inset 3px 0 0 #35c5ff,
+    0 0 12px rgba(0, 174, 255, 0.08);
+}
+
+/* 当前选中的选项 */
+.el-select-dropdown__item.selected {
+  color: #42baff !important;
+  font-weight: 600 !important;
+
+  background: linear-gradient(90deg,
+      rgba(0, 157, 255, 0.2),
+      rgba(0, 108, 255, 0.08)) !important;
+
+  box-shadow: inset 3px 0 0 #28bfff;
+}
+
+/* 选中项同时处于悬停状态 */
+.el-select-dropdown__item.selected.hover,
+.el-select-dropdown__item.selected:hover {
+  color: #7cdeff !important;
+
+  background: linear-gradient(90deg,
+      rgba(0, 183, 255, 0.25),
+      rgba(0, 108, 255, 0.12)) !important;
+}
+
+/* 禁用选项 */
+.el-select-dropdown__item.is-disabled {
+  color: #4d667a !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+/* ==========================================
+   Popper 小箭头
+   ========================================== */
+
+/* 箭头基础样式 */
+.el-select__popper.el-popper .el-popper__arrow::before,
+.el-select-dropdown.el-popper .el-popper__arrow::before {
+  background: #0c1b2b !important;
+
+  border-color: rgba(48, 184, 255, 0.45) !important;
+
+  box-shadow: -2px -2px 5px rgba(0, 174, 255, 0.04) !important;
+}
+
+/* 箭头 hover 状态：覆盖 Element Plus 默认 hover */
+.el-select__popper.el-popper .el-popper__arrow:hover::before,
+.el-select-dropdown.el-popper .el-popper__arrow:hover::before,
+.el-select__popper.el-popper .el-popper__arrow.is-hover::before,
+.el-select-dropdown.el-popper .el-popper__arrow.is-hover::before {
+  background: #0c1b2b !important;
+  border-color: rgba(48, 184, 255, 0.65) !important;
+}
+
+/* 箭头本身不接受鼠标交互时的兼容处理 */
+.el-select__popper.el-popper .el-popper__arrow::before:hover,
+.el-select-dropdown.el-popper .el-popper__arrow::before:hover {
+  background: #0c1b2b !important;
+  border-color: rgba(48, 184, 255, 0.65) !important;
+}
+
+/* ==========================================
+   滚动条
+   ========================================== */
+
+.el-select-dropdown .el-scrollbar__bar.is-vertical {
+  width: 5px;
+}
+
+.el-select-dropdown .el-scrollbar__thumb {
+  background: rgba(51, 187, 255, 0.45) !important;
+  border-radius: 6px;
+}
+
+.el-select-dropdown .el-scrollbar__thumb:hover {
+  background: rgba(51, 187, 255, 0.75) !important;
+}
+
+/* 无数据提示 */
+.el-select-dropdown__empty {
+  color: #7999b2 !important;
+  font-size: 14px;
+}
+
