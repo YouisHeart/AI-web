@@ -17,3 +17,8 @@ export function deleteUser(ids) {
         data:ids
     })
 }
+
+// 更新用户图像
+export function updateAvatar(data) {
+    return axios.post('/user/updateAvatar', data)
+}

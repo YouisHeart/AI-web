@@ -1,6 +1,5 @@
 <template>
     <header class="header">
-        <!-- 左侧：折叠按钮 + 品牌 + 面包屑 -->
         <div class="header__left">
             <button class="header__toggle" type="button" :title="isCollapse ? '展开菜单' : '收起菜单'"
                 @click="asideStore.toggleAside()">
@@ -42,7 +41,7 @@
                 popper-class="ai-user-dropdown-popper" @command="handleCommand">
                 <div class="header__user" tabindex="0">
                     <div class="header__avatar-wrap">
-                        <el-avatar :size="34" class="header__avatar">
+                        <el-avatar :size="34" class="header__avatar" :src="userPic">
                             {{ avatarText }}
                         </el-avatar>
                         <span class="header__avatar-online"></span>
@@ -64,7 +63,7 @@
                         <!-- 用户信息 -->
                         <div class="ai-dropdown-profile">
                             <div class="ai-dropdown-avatar">
-                                <el-avatar :size="42" class="ai-dropdown-avatar__image">
+                                <el-avatar :size="42" class="ai-dropdown-avatar__image" :src="userPic">
                                     {{ avatarText }}
                                 </el-avatar>
                                 <span class="ai-dropdown-avatar__status"></span>
@@ -88,6 +87,28 @@
 
                         <div class="ai-dropdown-divider">
                             <span>ACCOUNT CONTROL</span>
+                        </div>
+
+                        <!-- 修改用户图像 -->
+                        <div class="ai-dropdown-action" @click="handleCommand('changeAvatar')">
+                            <div class="ai-dropdown-action__icon">
+                                <el-icon :size="18" color="#4cd964">
+                                    <Avatar />
+                                </el-icon>
+                            </div>
+
+                            <div class="ai-dropdown-action__content">
+                                <span class="ai-dropdown-action__title">
+                                    修改头像
+                                </span>
+                                <span class="ai-dropdown-action__desc">
+                                    更新当前用户头像
+                                </span>
+                            </div>
+
+                            <el-icon class="ai-dropdown-action__arrow">
+                                <ArrowDown />
+                            </el-icon>
                         </div>
 
                         <!-- 修改密码 -->
@@ -182,12 +203,51 @@
             </div>
         </template>
     </ConfirmDialog>
+
+    <!-- 更新用户图像 -->
+     <ConfirmDialog ref="avatarDialogRef">
+        <template #content>
+            <div class="avatar-form">
+                <div class="avatar-form__preview">
+                    <!-- 只有已有真实头像地址时才展示图片 -->
+                    <el-avatar :size="100" :src="userPic || ''">
+                        {{ avatarText }}
+                    </el-avatar>
+                </div>
+
+                <div class="avatar-form__upload">
+                    <el-upload
+                    ref="avatarUploadRef" 
+                    :auto-upload="false"
+                    :show-file-list="false" 
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    :on-change="handleAvatarChange"
+                    >
+                        <el-button class="common-btn">
+                            <el-icon>
+                                <UploadFilled />
+                            </el-icon>
+                            选择图片
+                        </el-button>
+                    </el-upload>
+                </div>
+
+                <div class="avatar-form__tip">
+                    支持 JPG、PNG、WEBP、GIF 格式，图片大小不超过 5MB。
+                </div>
+
+                <div v-if="avatarFile" class="avatar-form__filename">
+                    已选择：{{ avatarFile.name }}
+                </div>
+            </div>
+        </template>
+    </ConfirmDialog>
     
 
 </template>
 
 <script setup>
-import { ref,reactive,computed, onMounted } from 'vue'
+import { ref,reactive,computed, onMounted,onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -198,14 +258,39 @@ import {
     Fold,
     Monitor,
     SwitchButton,
+    UploadFilled,
 } from '@element-plus/icons-vue'
 import Password from "@/assets/icon/password.svg?component";
+import Avatar from "@/assets/icon/avatar.svg?component";
 import { useAsideStore } from '@/store/aside'
 import { useUserStoreHook } from '@/store/userInfoStore'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { updatepassword } from '@/api/login'
+import { updateAvatar } from '@/api/userManage'
 
+// 修改密码弹窗ref
 const confirmDialogRef = ref(null)
+// 修改用户图像ref
+const avatarDialogRef = ref(null)
+const avatarUploadRef = ref(null)
+
+// 用户选择的原始图片文件
+const avatarFile = ref(null)
+
+// 当前用户真实头像地址
+const userPic = computed(() => {
+    return userStore.userInfo?.userPic
+        || userStore.userPic
+        || ''
+})
+
+// 没有头像时显示用户名首字母
+const avatarText = computed(() => {
+    return username.value
+        ? username.value.slice(0, 1).toUpperCase()
+        : 'AI'
+})
+
 
 const route = useRoute()
 const router = useRouter()
@@ -230,19 +315,97 @@ const breadcrumbs = computed(() =>
         .map((item) => ({ path: item.path, title: item.meta.title })),
 )
 
-// 头像文字
-const avatarText = computed(() =>
-    username.value ? username.value.slice(0, 1).toUpperCase() : 'AI',
-)
-
-
-
 onMounted(() => {
     // 刷新页面后补一次用户信息
     if (!username.value) {
         userStore.storeUserInfo()
     }
 })
+
+// 选择图片
+function handleAvatarChange(uploadFile) {
+    const file = uploadFile.raw
+
+    if (!file) {
+        return
+    }
+
+    const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif'
+    ]
+
+    if (!allowedTypes.includes(file.type)) {
+        ElMessage.warning('请选择 JPG、PNG、WEBP 或 GIF 格式的图片')
+        avatarUploadRef.value?.clearFiles()
+        avatarFile.value = null
+        return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+        ElMessage.warning('图片大小不能超过 5MB')
+        avatarUploadRef.value?.clearFiles()
+        avatarFile.value = null
+        return
+    }
+    avatarUploadRef.value?.clearFiles()
+    avatarFile.value = file
+}
+
+// 打开独立的头像弹窗
+async function openAvatarDialog() {
+    avatarFile.value = null
+    avatarUploadRef.value?.clearFiles()
+
+    await avatarDialogRef.value.open({
+        title: '修改用户头像',
+        description: '选择一张图片，更新你的 NEXUS AI 账户头像。',
+        confirmText: '确认修改',
+        cancelText: '取消操作',
+        type: 'primary',
+        icon: 'UserFilled',
+        width: '620px',
+        customContent: true,
+        showClose: true,
+        closeOnClickModal: false,
+        closeOnPressEscape: true,
+        systemLabel: 'NEXUS ACCOUNT PROFILE',
+        footerText: 'AVATAR UPDATE · PROFILE',
+
+        onConfirm: async () => {
+            if (!avatarFile.value) {
+                ElMessage.warning('请先选择一张图片')
+                return false
+            }
+
+            try {
+                const formData = new FormData()
+
+                // 这里的 file 必须与后端 MultipartFile 参数名一致
+                formData.append('file', avatarFile.value)
+
+                const res = await updateAvatar(formData)
+
+                if (res.code !== 0) {
+                    ElMessage.error(res.message || '头像修改失败')
+                    return false
+                }
+
+                // 重新获取后端用户信息
+                await userStore.storeUserInfo()
+
+                ElMessage.success('头像修改成功')
+                return true
+            } catch (error) {
+                console.error('头像修改失败：', error)
+                ElMessage.error('头像修改失败，请稍后重试')
+                return false
+            }
+        }
+    })
+}
 
 
 
@@ -315,6 +478,11 @@ async function handleCommand(command) {
         // 后端已经删除当前 Token，清理前端登录状态并跳转
         await userStore.storeLogout()
         await router.replace('/login')
+        return
+    }
+
+    if (command === 'changeAvatar') {
+        await openAvatarDialog()
         return
     }
 
@@ -468,6 +636,50 @@ async function handleCommand(command) {
 
 .header__breadcrumb :deep(.el-breadcrumb__separator) {
     color: #45597c;
+}
+
+/* 修改图像 */
+.avatar-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 16px 0 8px;
+}
+
+.avatar-form__preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 132px;
+    height: 132px;
+    border: 1px solid rgba(61, 159, 255, 0.3);
+    border-radius: 50%;
+    background: rgba(19, 55, 96, 0.28);
+    box-shadow: 0 0 24px rgba(37, 126, 255, 0.12);
+}
+
+.avatar-form__preview :deep(.el-avatar) {
+    border: 2px solid rgba(73, 169, 255, 0.45);
+    color: #ffffff;
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #397bff, #12c7d9);
+}
+
+.avatar-form__tip {
+    color: #7899c2;
+    font-size: 12px;
+    line-height: 1.8;
+    text-align: center;
+}
+
+.avatar-form__filename {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    color: #55c4ff;
+    font-size: 12px;
+    text-align: center;
 }
 
 /* 运行状态 */

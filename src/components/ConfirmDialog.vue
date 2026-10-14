@@ -22,12 +22,12 @@
       </div>
 
       <!-- 图标区域 -->
-      <div class="confirm-icon" :class="`confirm-icon--${config.type}`">
+      <!-- <div class="confirm-icon" :class="`confirm-icon--${config.type}`">
         <div class="confirm-icon__halo"></div>
         <el-icon :size="32">
           <component :is="currentIcon" />
         </el-icon>
-      </div>
+      </div> -->
 
       <!-- 文案区域 -->
       <div class="confirm-content">
@@ -120,12 +120,6 @@ const iconMap = {
   delete: Delete,
   refresh: Refresh,
 }
-
-const currentIcon = computed(() => {
-  return iconMap[config.value.icon]
-    ? iconMap[config.value.icon]
-    : iconMap[config.value.type] || CircleCheckFilled
-})
 
 const currentButtonIcon = computed(() => {
   if (config.value.icon && iconMap[config.value.icon]) {

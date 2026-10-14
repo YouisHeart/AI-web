@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { login,userInfo } from "@/api/login";
+import { login, userInfo } from "@/api/login";
 import { setToken, removeToken } from "@/composables/auth.js";
 import { ElMessage } from "element-plus";
 
@@ -8,6 +8,7 @@ export const useUserStoreHook = defineStore("userInfo", {
   state() {
     return {
       username: "",
+      userPic: "",
       accessToken: ""
     };
   },
@@ -33,16 +34,24 @@ export const useUserStoreHook = defineStore("userInfo", {
     storeUserInfo() {
       return userInfo().then((res) => {
         this.username = res.data.username;
+        this.userPic = res.data.userPic;
         return res
       }).catch(err => {
         console.error("获取用户信息失败", err)
       })
     },
 
+    // 更新头像状态
+    updateUserAvatar(avatarUrl) {
+      this.userPic = avatarUrl;
+    },
+
     // 退出登录
     async storeLogout() {
       removeToken();
       this.accessToken = "";
+      this.username = "";
+      this.userPic = "";
     }
   },
 

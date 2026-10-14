@@ -11,7 +11,7 @@
         <!-- 工作空间 -->
         <div class="sidebar-heading">工作空间</div>
 
-        <div class="nav-item active">
+        <div class="nav-item active" :class="{ active: route.path === '/' }" @click="router.push('/')">
             <el-icon>
                 <ChatDotRound />
             </el-icon>

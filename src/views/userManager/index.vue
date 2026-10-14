@@ -16,7 +16,7 @@
             </div>
 
             <div class="header-actions">
-                <el-button class="refresh-button" :loading="loading" @click="getUserList">
+                <el-button class="common-btn" :loading="loading" @click="getUserList">
                     <el-icon>
                         <Refresh />
                     </el-icon>
@@ -42,7 +42,7 @@
 
             <!-- 搜索区域 -->
             <div class="search-toolbar">
-                <el-input v-model="searchKeyword" class="search-input" placeholder="搜索用户名或昵称" clearable
+                <el-input v-model="searchKeyword" class="common-input" placeholder="搜索用户名或昵称" clearable
                     @keyup.enter="handleSearch">
                     <template #prefix>
                         <el-icon>
@@ -51,7 +51,7 @@
                     </template>
                 </el-input>
 
-                <el-button class="search-button" @click="handleSearch">
+                <el-button class="common-btn" @click="handleSearch">
                     <el-icon>
                         <Search />
                     </el-icon>
@@ -71,7 +71,7 @@
                     位用户
                 </span>
 
-                <el-button class="batch-delete-button" :loading="deleting" :disabled="!selectedUsers.length" @click="handleBatchDelete">
+                <el-button class="common-btn" :loading="deleting" :disabled="!selectedUsers.length" @click="handleBatchDelete">
                     <el-icon>
                         <Delete />
                     </el-icon>
@@ -80,8 +80,18 @@
             </div>
 
             <!-- 用户表格 -->
-            <el-table ref="userTableRef" v-loading="loading" :data="allUsersList" class="user-table" height="100%"
-                row-key="id" empty-text="暂无注册用户数据" @selection-change="handleSelectionChange">
+            <el-table 
+            ref="userTableRef"
+            v-loading="loading"
+            element-loading-background="rgba(8, 19, 33, 0.75)"
+            element-loading-text="加载中..."
+            :data="allUsersList" 
+            class="user-table" 
+            height="100%"
+            row-key="id" 
+            empty-text="暂无注册用户数据" 
+            @selection-change="handleSelectionChange"
+            >
                 <!-- 勾选列 -->
                 <el-table-column type="selection" width="52" align="center" reserve-selection />
 
@@ -509,19 +519,6 @@ onMounted(() => {
     }
 }
 
-.refresh-button {
-    height: 38px;
-    color: #5de8ff;
-    border: 1px solid rgba(0, 208, 255, 0.35);
-    background: rgba(0, 190, 255, 0.07);
-
-    &:hover {
-        color: #fff;
-        border-color: #32dfff;
-        background: rgba(0, 190, 255, 0.16);
-    }
-}
-
 .statistics-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -670,11 +667,6 @@ onMounted(() => {
     align-items: center;
     gap: 12px;
     padding: 20px 24px;
-}
-
-.search-input {
-    width: 320px;
-    max-width: 100%;
 }
 
 .search-button,
@@ -880,10 +872,6 @@ onMounted(() => {
 
     .search-toolbar {
         padding: 16px;
-    }
-
-    .search-input {
-        width: 100%;
     }
 
     .panel-header {
