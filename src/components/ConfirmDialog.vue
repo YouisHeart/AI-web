@@ -72,6 +72,7 @@
       </div>
     </div>
   </el-dialog>
+ 
 </template>
 
 <script setup>
@@ -86,8 +87,11 @@ import {
   Refresh,
 } from '@element-plus/icons-vue'
 
+
 const visible = ref(false)
 const loading = ref(false)
+
+
 
 const defaultConfig = {
   title: '确认执行此操作？',

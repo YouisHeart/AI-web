@@ -171,7 +171,7 @@
                                 <span class="field-en">USERNAME</span>
                             </label>
 
-                            <el-input v-model="registerInfo.username" placeholder="请设置用户名" size="large"
+                            <el-input v-model.trim="registerInfo.username" placeholder="请设置用户名" size="large"
                                 autocomplete="username" clearable class="cyber-input">
                                 <template #prefix>
                                     <el-icon>
@@ -188,7 +188,7 @@
                                 <span class="field-en">PASSWORD</span>
                             </label>
 
-                            <el-input v-model="registerInfo.password" type="password" placeholder="请设置 6-20 位密码"
+                            <el-input v-model.trim="registerInfo.password" type="password" placeholder="请设置 6-20 位密码"
                                 size="large" autocomplete="new-password" show-password class="cyber-input">
                                 <template #prefix>
                                     <el-icon>
@@ -205,7 +205,7 @@
                                 <span class="field-en">CONFIRM PASSWORD</span>
                             </label>
 
-                            <el-input v-model="registerInfo.confirmPassword" type="password" placeholder="请再次输入登录密码"
+                            <el-input v-model.trim="registerInfo.confirmPassword" type="password" placeholder="请再次输入登录密码"
                                 size="large" autocomplete="new-password" show-password class="cyber-input"
                                 @keyup.enter="handleRegister">
                                 <template #prefix>

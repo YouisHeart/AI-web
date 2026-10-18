@@ -13,6 +13,8 @@
             <section class="layout__main">
 
                 <div class="layout__view" :class="{ 'is-full': isFullBleed }">
+                    <!-- 注意：mode="out-in" 的 <transition> 要求子组件必须只有一个根节点，
+                         路由页面模板出现多根（fragment）时过渡无法收尾，切换后内容区会空白 -->
                     <router-view v-slot="{ Component }">
                         <transition name="view-fade" mode="out-in">
                             <component :is="Component" />
@@ -63,8 +65,8 @@ watch(width, (value) => {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
+    /* height: 100vh; */
+    overflow: scroll;
     color: #e4edff;
     background:
         radial-gradient(ellipse at 55% -20%, rgba(27, 82, 166, 0.18), transparent 55%),
@@ -107,7 +109,7 @@ watch(width, (value) => {
 
 .layout__view.is-full {
     padding: 0;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .view-fade-enter-active,

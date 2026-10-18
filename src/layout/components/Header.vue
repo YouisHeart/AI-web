@@ -161,7 +161,7 @@
             </el-dropdown>
         </div>
         
-    </header>
+        <!-- 弹窗放在根元素内部：根元素唯一，class 才能被 header 正常继承 -->
 
     <!-- 退出登录 -->
      <ConfirmDialog ref="confirmDialogRef">
@@ -244,6 +244,7 @@
     </ConfirmDialog>
     
 
+    </header>
 </template>
 
 <script setup>

@@ -15,7 +15,7 @@ const pinia = createPinia()
 pinia.use(persist)
 
 const app = createApp(App)
-app.config.globalProperties.name = '@极简前端'
+app.config.globalProperties.name = 'NEXUS AI'
 for (const [key, component] of Object.entries(ElementPlusIcons)) {
     app.component(key, component);
 }

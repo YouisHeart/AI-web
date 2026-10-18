@@ -328,11 +328,16 @@ input:-webkit-autofill:active {
   --el-button-hover-text-color: #fff;
   --el-button-hover-border-color: #32dfff;
   --el-button-hover-bg-color: rgba(0, 190, 255, 0.16);
+
+  --el-button-disabled-text-color: #5de8ff;
+  --el-button-disabled-border-color: rgba(0, 208, 255, 0.35);
+  --el-button-disabled-bg-color: rgba(0, 190, 255, 0.07);
 }
 
 /* AI 科幻风格搜索框 */
 .common-input {
   width: 280px !important;
+  margin-right: 12px;
 }
 
 /* 输入框主体 */

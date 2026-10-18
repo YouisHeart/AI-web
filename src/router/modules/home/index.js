@@ -29,5 +29,16 @@ export default {
                 fullBleed: true, 
             },
         },
+        {
+            path: "/user/usage",
+            name: "UserUsage",
+            component: () => import("@/views/usage/index.vue"),
+            meta: {
+                title: "用量信息",
+                icon: "Cpu",
+                isShow: true,
+                fullBleed: true,
+            },
+        },
     ],
 };

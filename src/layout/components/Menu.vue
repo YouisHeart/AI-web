@@ -1,7 +1,7 @@
 <template>
     <aside class="sidebar">
         <!-- 开启新对话 -->
-        <el-button class="new-chat-btn" @click="emit('new-chat')">
+        <el-button class="new-chat-btn" @click="handleNewChat">
             <el-icon>
                 <Plus />
             </el-icon>
@@ -11,7 +11,8 @@
         <!-- 工作空间 -->
         <div class="sidebar-heading">工作空间</div>
 
-        <div class="nav-item active" :class="{ active: route.path === '/' }" @click="router.push('/')">
+        <!-- AI问答 -->
+        <div class="nav-item" :class="{ active: route.path === '/' }" @click="router.push('/')">
             <el-icon>
                 <ChatDotRound />
             </el-icon>
@@ -19,12 +20,22 @@
             <span class="nav-count">AI</span>
         </div>
 
+        <!-- 用户管理 -->
         <div class="nav-item" :class="{ active: route.path === '/user/manage' }" @click="router.push('/user/manage')">
             <el-icon>
                 <User />
             </el-icon>
             <span>用户管理</span>
             <span class="nav-count">SYS</span>
+        </div>
+
+        <!-- 用量信息 -->
+        <div class="nav-item" :class="{ active: route.path === '/user/usage' }" @click="router.push('/user/usage')">
+            <el-icon>
+                <Cpu />
+            </el-icon>
+            <span>用量信息</span>
+            <span class="nav-count">USAGE</span>
         </div>
 
         <!-- 最近对话 -->
@@ -38,7 +49,7 @@
         <!-- 历史记录列表 -->
         <div class="history-list">
             <div v-for="item in conversations" :key="item.id" class="history-item"
-                :class="{ selected: activeId === item.id }" @click="emit('switch-conversation', item)">
+                :class="{ selected: conversationId === item.id }" @click="handleSelectConversation(item)">
                 <el-icon class="history-icon">
                     <ChatLineRound />
                 </el-icon>
@@ -48,7 +59,7 @@
                 </span>
 
                 <el-button text class="delete-history" aria-label="删除历史对话" title="删除对话"
-                    @click.stop="emit('delete-conversation', item.id)">
+                    @click.stop="handleDeleteConversation(item)">
                     <el-icon>
                         <Close />
                     </el-icon>
@@ -83,6 +94,7 @@
 </template>
 
 <script setup>
+import { onMounted,ref } from 'vue'
 import {
     Plus,
     ChatDotRound,
@@ -92,19 +104,21 @@ import {
     User
 } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useAiConversationStore } from '@/store/aiConversationStore'
+
+const aiConversationStore = useAiConversationStore()
 
 const router = useRouter()
 const route = useRoute()
 
+
+const {
+    conversations,
+    conversationId
+} = storeToRefs(aiConversationStore)
+
 defineProps({
-    conversations: {
-        type: Array,
-        default: () => []
-    },
-    activeId: {
-        type: [String, Number],
-        default: null
-    },
     username: {
         type: String,
         default: ''
@@ -112,11 +126,35 @@ defineProps({
 })
 
 const emit = defineEmits([
-    'new-chat',
     'clear-history',
     'switch-conversation',
-    'delete-conversation'
 ])
+
+// 加载最近对话
+onMounted(() => {
+    aiConversationStore.loadConversations()
+})
+
+// 开启新对话
+function handleNewChat() {
+    aiConversationStore.startNewChat()
+    emit('new-chat')
+}
+
+// 点击历史会话
+function handleSelectConversation(item) {
+    console.log('点击的历史会话：', item)
+    console.log('点击前 conversationId：', conversationId.value)
+
+    aiConversationStore.switchConversation(item.id)
+}
+
+// 删除单条会话
+function handleDeleteConversation(item) {
+    console.log(item)
+    aiConversationStore.removeConversation(item.id)
+    emit('delete-conversation', item)
+}
 </script>
 
 <style scoped lang="scss">
@@ -200,6 +238,7 @@ const emit = defineEmits([
     border-radius: 8px;
     color: #9bb0d2;
     font-size: 13px;
+    cursor: pointer;
 }
 
 .nav-item {

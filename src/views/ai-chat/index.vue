@@ -166,7 +166,7 @@
                                 <span class="input-counter">{{ inputText.length }} / 4000</span>
                             </div>
 
-                            <el-button class="send-button" :disabled="!inputText.trim() || loading"
+                            <el-button class="common-btn" :disabled="!inputText.trim() || loading"
                                 @click="sendMessage()">
                                 <span>发送消息</span>
                                 <el-icon>
@@ -185,7 +185,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, computed, onBeforeUnmount,reactive,onMounted } from 'vue'
+import { ref, nextTick, computed, onBeforeUnmount, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
     Plus,
@@ -205,31 +205,23 @@ import {
     EditPen,
     Search,
 } from '@element-plus/icons-vue'
-import MarkdownIt from 'markdown-it'
-import hljs from 'highlight.js'
+import { renderMarkdown } from '@/utils/utils'
 import 'highlight.js/styles/github-dark.css'
-import { chatWithAIStream } from '@/api/ai'
+import {
+    chatWithAIStream,
+    createConversation,
+    getConversationMessages,
+    deleteConversation
+} from '@/api/ai'
 import { useUserStoreHook } from '@/store/userInfoStore'
 import { storeToRefs } from 'pinia'
+import { useAiConversationStore } from '@/store/aiConversationStore'
 
-const md = new MarkdownIt({
-    html: false,
-    linkify: true,
-    breaks: true,
-    highlight(code, language) {
-        if (language && hljs.getLanguage(language)) {
-            try {
-                return `<pre class="hljs"><code>${hljs.highlight(code, {
-                    language,
-                    ignoreIllegals: true,
-                }).value}</code></pre>`
-            } catch {
-                // 使用普通代码块
-            }
-        }
-        return `<pre class="hljs"><code>${md.utils.escapeHtml(code)}</code></pre>`
-    },
-})
+const aiConversationStore = useAiConversationStore()
+
+const { conversationId, switchVersion } = storeToRefs(aiConversationStore)
+
+
 
 const suggestions = [
     {
@@ -266,37 +258,16 @@ const messages = ref([])
 const inputText = ref('')
 const loading = ref(false)
 const messageContainer = ref(null)
-const conversations = ref([])
-const activeId = ref(null)
+
 
 let requestController = null
 let requestVersion = 0
 
+// 防止sse新建会话时触发历史消息加载，覆盖正在显示的回答
+let syncingConversationFromStream = false
+
 // 获取用户信息
 const userStore = useUserStoreHook();
-console.log('userStore:', userStore);
-const { username } = storeToRefs(userStore);
-console.log(username);
-
-const currentConversation = computed(() =>
-    conversations.value.find(item => item.id === activeId.value),
-)
-
-function createId() {
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-}
-
-function getTime() {
-    return new Date().toLocaleTimeString('zh-CN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-    })
-}
-
-function renderMarkdown(content) {
-    return md.render(content || '')
-}
 
 function scrollToBottom() {
     nextTick(() => {
@@ -307,13 +278,6 @@ function scrollToBottom() {
     })
 }
 
-function newChat() {
-    cancelRequest()
-    activeId.value = null
-    messages.value = []
-    inputText.value = ''
-}
-
 function cancelRequest() {
     requestVersion++
     requestController?.abort()
@@ -321,31 +285,6 @@ function cancelRequest() {
     loading.value = false
 }
 
-function syncConversationTitle(question) {
-    if (!activeId.value) {
-        const conversation = {
-            id: createId(),
-            title: question.slice(0, 24),
-            updatedAt: Date.now(),
-            messages: [],
-        }
-        conversations.value.unshift(conversation)
-        activeId.value = conversation.id
-    }
-
-    const conversation = currentConversation.value
-    if (conversation) {
-        conversation.updatedAt = Date.now()
-        conversation.messages = messages.value
-    }
-}
-
-function switchConversation(item) {
-    cancelRequest()
-    activeId.value = item.id
-    messages.value = item.messages
-    scrollToBottom()
-}
 
 async function sendMessage(text) {
     const question = (text ?? inputText.value).trim()
@@ -358,20 +297,15 @@ async function sendMessage(text) {
     }
 
     inputText.value = ''
-    syncConversationTitle(question)
 
     messages.value.push({
-        id: createId(),
         role: 'user',
         content: question,
-        time: getTime()
     })
 
     const answer = reactive({
-        id: createId(),
         role: 'assistant',
         content: '',
-        time: getTime(),
         loading: true,
         error: ''
     })
@@ -443,7 +377,10 @@ async function sendMessage(text) {
 
     try {
         await chatWithAIStream(
-            { message: question },
+            {
+                message: question,
+                conversationId: conversationId.value,
+            },
             (chunk) => {
                 // 新对话或切换历史后，不再更新旧消息
                 if (version !== requestVersion) return
@@ -452,7 +389,22 @@ async function sendMessage(text) {
                 enqueueTypingChunk(chunk)
             },
             {
-                signal: requestController.signal
+                signal: requestController.signal,
+                onConversationId: async (id) => {
+                    if (version !== requestVersion) return
+                    // 先同步pinia，避免当前会话ID只保存在localStorage中，导致刷新后无法获取历史消息
+                    syncingConversationFromStream = true
+                    aiConversationStore.setConversationId(id)
+
+                    try {
+                        await aiConversationStore.loadConversations()
+                    } catch (error) {
+                        console.error('加载历史会话失败:', error)
+                    } finally {
+                        await nextTick()
+                        syncingConversationFromStream = false
+                    }
+                }
             }
         )
 
@@ -468,7 +420,6 @@ async function sendMessage(text) {
         }
 
         answer.loading = false
-        answer.time = getTime()
     } catch (error) {
         if (version !== requestVersion) return
 
@@ -488,8 +439,6 @@ async function sendMessage(text) {
         if (version === requestVersion) {
             loading.value = false
             requestController = null
-
-            syncConversationTitle(question)
             scrollToBottom()
         }
     }
@@ -511,37 +460,60 @@ function retryMessage(index) {
     sendMessage(question)
 }
 
-function deleteConversation(id) {
-    conversations.value = conversations.value.filter(item => item.id !== id)
+// 加载历史对话
+async function loadConversationMessages(id) {
+    // 切换会话前取消上一条 SSE 请求
+    cancelRequest()
 
-    if (activeId.value === id) {
-        newChat()
+    inputText.value = ''
+    messages.value = []
+
+    if (id == null || id === '') {
+        return
     }
-}
 
-async function clearHistory() {
-    if (!conversations.value.length) return
+    const currentId = String(id)
 
     try {
-        await ElMessageBox.confirm(
-            '确定清空所有历史对话吗？此操作不可撤销。',
-            '清空历史',
-            { type: 'warning' },
-        )
-        newChat()
-        conversations.value = []
-    } catch {
-        // 用户取消
+        const res = await getConversationMessages(id)
+
+        // 请求期间如果切换到了其他会话，丢弃旧结果
+        if (
+            String(conversationId.value) !== currentId ||
+            syncingConversationFromStream
+        ) {
+            return
+        }
+
+        // 根据接口返回结构提取消息数组
+        const list = res?.data?? []
+        messages.value = list.map((item) => ({
+            id: item.id,
+            role: item.role,
+            content: item.content,
+            loading: false,
+            error: ''
+        }))
+
+        scrollToBottom()
+    } catch (error) {
+        console.error('加载历史消息失败：', error)
+        ElMessage.error('历史消息加载失败，请重试')
     }
 }
+
+
+// 每次点击历史记录都会触发
+watch(switchVersion, async () => {
+    const id = conversationId.value
+    if (!id) return
+    messages.value = []
+    await loadConversationMessages(id)
+})
 
 async function copyMessage(content) {
-    try {
-        await navigator.clipboard.writeText(content)
-        ElMessage.success('复制成功')
-    } catch {
-        ElMessage.error('复制失败，请检查浏览器权限')
-    }
+    await navigator.clipboard.writeText(content)
+    ElMessage.success('复制成功')
 }
 
 function handleKeydown(event) {
@@ -553,7 +525,8 @@ function handleKeydown(event) {
 
 onMounted(async () => {
     await userStore.storeUserInfo()
-    console.log('username:', username.value)
+    await aiConversationStore.loadConversations();
+
 })
 
 onBeforeUnmount(() => {
@@ -577,6 +550,7 @@ onBeforeUnmount(() => {
     color: #7daeff !important;
     box-shadow: none !important;
 }
+
 .ai-page {
     --bg: #050b18;
     --panel: #0a1428;

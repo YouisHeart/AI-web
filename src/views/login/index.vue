@@ -172,7 +172,7 @@
                                 <span class="field-en">USERNAME</span>
                             </label>
 
-                            <el-input v-model="userInfo.username" placeholder="请输入用户名" size="large"
+                            <el-input v-model.trim="userInfo.username" placeholder="请输入用户名" size="large"
                                 autocomplete="username" clearable class="cyber-input">
                                 <template #prefix>
                                     <el-icon>
@@ -188,7 +188,7 @@
                                 <span class="field-en">PASSWORD</span>
                             </label>
 
-                            <el-input v-model="userInfo.password" type="password" placeholder="请输入登录密码" size="large"
+                            <el-input v-model.trim="userInfo.password" type="password" placeholder="请输入登录密码" size="large"
                                 autocomplete="current-password" show-password class="cyber-input">
                                 <template #prefix>
                                     <el-icon>

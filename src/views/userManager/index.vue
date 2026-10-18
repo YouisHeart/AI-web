@@ -42,6 +42,7 @@
 
             <!-- 搜索区域 -->
             <div class="search-toolbar">
+                <div>
                 <el-input v-model="searchKeyword" class="common-input" placeholder="搜索用户名或昵称" clearable
                     @keyup.enter="handleSearch">
                     <template #prefix>
@@ -61,22 +62,23 @@
                 <el-button class="reset-button" @click="handleReset">
                     重置
                 </el-button>
-            </div>
+                </div>
+                <!-- 已选择用户的操作栏 -->
+                <div v-if="selectedUsers.length" class="selection-toolbar">
+                    <span>
+                        已选择
+                        <strong>{{ selectedUsers.length }}</strong>
+                        位用户
+                    </span>
 
-            <!-- 已选择用户的操作栏 -->
-            <div v-if="selectedUsers.length" class="selection-toolbar">
-                <span>
-                    已选择
-                    <strong>{{ selectedUsers.length }}</strong>
-                    位用户
-                </span>
-
-                <el-button class="common-btn" :loading="deleting" :disabled="!selectedUsers.length" @click="handleBatchDelete">
-                    <el-icon>
-                        <Delete />
-                    </el-icon>
-                    批量删除
-                </el-button>
+                    <el-button class="common-btn" :loading="deleting" :disabled="!selectedUsers.length"
+                        @click="handleBatchDelete">
+                        <el-icon>
+                            <Delete />
+                        </el-icon>
+                        批量删除
+                    </el-button>
+                </div>
             </div>
 
             <!-- 用户表格 -->
@@ -94,11 +96,9 @@
             >
                 <!-- 勾选列 -->
                 <el-table-column type="selection" width="52" align="center" reserve-selection />
-
-                <!-- 用户 ID -->
-                <el-table-column prop="id" label="用户 ID" width="100" align="center">
-                    <template #default="{ row }">
-                        <span class="user-id">{{ row.id }}</span>
+                <el-table-column label="序号" width="80">
+                    <template #default="{ $index }">
+                        {{ (currentPage - 1) * pageSize + $index + 1 }}
                     </template>
                 </el-table-column>
 
@@ -216,6 +216,10 @@
                 </el-button>
             </template>
         </el-dialog>
+
+        <!-- 删除确认弹窗：必须留在根元素内部，保证组件只有一个根节点；
+             否则外层 <Transition mode="out-in"> 无法完成过渡，路由切换后页面会空白 -->
+        <ConfirmDialog ref="DeleteDialogRef" />
     </div>
 </template>
 
@@ -236,10 +240,13 @@ import {
     userList as fetchUserList,
     deleteUser
 } from '@/api/userManage.js'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const loading = ref(false)
 const deleting = ref(false)
 const deletingIds = ref([])
+// 是否确认删除用户弹窗ref
+const DeleteDialogRef = ref(null)
 
 const userTableRef = ref()
 const allUsersList = ref([])
@@ -315,42 +322,47 @@ function handleView(row) {
 /**
  * 删除单个用户
  */
+/**
+ * 删除单个用户
+ */
 async function handleDelete(row) {
-    try {
-        await ElMessageBox.confirm(
-            `确定要删除用户「${row.username || row.id}」吗？删除后请确认后端数据是否可恢复。`,
-            '删除确认',
-            {
-                confirmButtonText: '确认删除',
-                cancelButtonText: '取消',
-                type: 'warning',
-                confirmButtonClass: 'danger-confirm-button',
-                distinguishCancelAndClose: true
+    await DeleteDialogRef.value.open({
+        width: '480px',
+        title: '确认删除该用户？',
+        description: `确定要删除用户「${row.username || row.id}」吗？删除后请确认后端数据是否可恢复。`,
+        tip: '此操作可能不可撤销，请谨慎操作。',
+        confirmText: '确认删除',
+        cancelText: '取消',
+        type: 'danger',
+        icon: 'delete',
+        systemLabel: 'NEXUS SECURITY CENTER',
+        footerText: 'SECURE OPERATION · AI SYSTEM',
+        onConfirm: async () => {
+            deletingIds.value = [...deletingIds.value, row.id]
+
+            try {
+                await deleteUser([row.id])
+
+                ElMessage.success('用户删除成功')
+
+                // 清理当前选中状态
+                selectedUsers.value = selectedUsers.value.filter(
+                    user => user.id !== row.id
+                )
+
+                await getUserList()
+            } catch (error) {
+                console.error('删除用户失败：', error)
+                ElMessage.error('删除用户失败，请检查接口配置')
+                // 抛出异常让弹窗保持打开，便于用户重试
+                throw error
+            } finally {
+                deletingIds.value = deletingIds.value.filter(
+                    id => id !== row.id
+                )
             }
-        )
-
-        deletingIds.value = [...deletingIds.value, row.id]
-
-        await deleteUser([row.id])
-
-        ElMessage.success('用户删除成功')
-
-        // 清理当前选中状态
-        selectedUsers.value = selectedUsers.value.filter(
-            user => user.id !== row.id
-        )
-
-        await getUserList()
-    } catch (error) {
-        if (error !== 'cancel' && error !== 'close') {
-            console.error('删除用户失败：', error)
-            ElMessage.error('删除用户失败，请检查接口配置')
         }
-    } finally {
-        deletingIds.value = deletingIds.value.filter(
-            id => id !== row.id
-        )
-    }
+    })
 }
 
 /**
@@ -362,40 +374,32 @@ async function handleBatchDelete() {
     const users = [...selectedUsers.value]
     const ids = users.map(user => user.id)
 
-    try {
-        await ElMessageBox.confirm(
-            `确定要删除已选择的 ${ ids.length } 位用户吗？此操作不可轻易撤销。`,
-            '批量删除确认',
-            {
-                confirmButtonText: '确认删除',
-                cancelButtonText: '取消',
-                type: 'warning',
-                confirmButtonClass: 'danger-confirm-button'
-            }
-        )
+    await DeleteDialogRef.value.open({
+        title: '确认批量删除用户？',
+        description: `确定要删除已选择的 ${ids.length} 位用户吗？此操作不可轻易撤销。`,
+        tip: '批量删除将同时移除所选用户的全部数据，请确认后再执行。',
+        confirmText: '确认删除',
+        cancelText: '取消',
+        type: 'danger',
+        icon: 'delete',
+        systemLabel: 'NEXUS SECURITY CENTER',
+        footerText: 'SECURE OPERATION · AI SYSTEM',
+        onConfirm: async () => {
+            deleting.value = true
+                // 一次请求删除全部选中的用户
+                await deleteUser(ids)
+                ElMessage.success(`成功删除 ${ids.length} 位用户`)
 
-        deleting.value = true
+                // 清除表格勾选
+                userTableRef.value?.clearSelection()
+                selectedUsers.value = []
 
-        // 一次请求删除全部选中的用户
-        await deleteUser(ids)
-
-        ElMessage.success(`成功删除 ${ ids.length } 位用户`)
-
-        // 清除表格勾选
-        userTableRef.value?.clearSelection()
-        selectedUsers.value = []
-
-        // 重新获取用户列表
-        await getUserList()
-    } catch (error) {
-        if (error !== 'cancel' && error !== 'close') {
-            console.error('批量删除失败：', error)
-            ElMessage.error('批量删除失败，请检查接口配置')
+                // 重新获取用户列表
+                await getUserList()
         }
-    } finally {
-        deleting.value = false
-    }
+    })
 }
+
 
 /**
  * 格式化注册时间
@@ -664,6 +668,7 @@ onMounted(() => {
 .search-toolbar {
     display: flex;
     flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
     gap: 12px;
     padding: 20px 24px;
